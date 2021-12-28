@@ -1,5 +1,5 @@
 use anyhow::anyhow;
-use std::str::FromStr;
+use std::{io::BufRead, str::FromStr};
 
 enum Direction {
     Forward,
@@ -31,10 +31,10 @@ impl FromStr for Command {
     }
 }
 
-pub fn part1(input: &str) -> anyhow::Result<String> {
+pub fn part1(input: impl BufRead) -> anyhow::Result<String> {
     let commands: Box<[Command]> = input
         .lines()
-        .map(|line| line.parse())
+        .map(|line| line?.parse())
         .collect::<Result<_, _>>()?;
     let mut horizontal = 0u32;
     let mut depth = 0u32;
@@ -48,10 +48,10 @@ pub fn part1(input: &str) -> anyhow::Result<String> {
     Ok(format!("{}", horizontal * depth))
 }
 
-pub fn part2(input: &str) -> anyhow::Result<String> {
+pub fn part2(input: impl BufRead) -> anyhow::Result<String> {
     let commands: Box<[Command]> = input
         .lines()
-        .map(|line| line.parse())
+        .map(|line| line?.parse())
         .collect::<Result<_, _>>()?;
     let mut horizontal = 0u32;
     let mut depth = 0u32;
