@@ -63,7 +63,11 @@ fn bit_average(ints: &[IntType], bit_idx: usize) -> IntType {
     }
 }
 
-fn bitwise_similarity_filter(ints: &[IntType], max_bit_depth: usize, anti: bool) -> anyhow::Result<IntType> {
+fn bitwise_similarity_filter(
+    ints: &[IntType],
+    max_bit_depth: usize,
+    anti: bool,
+) -> anyhow::Result<IntType> {
     let mut out: Vec<IntType> = ints.to_vec();
     for bit_idx in (INT_BIT_DEPTH - max_bit_depth)..INT_BIT_DEPTH {
         if out.len() == 1 {
