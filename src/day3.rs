@@ -1,40 +1,80 @@
 use anyhow::anyhow;
-use std::io::BufRead;
+use std::{io::BufRead, mem::size_of};
+
+type IntType = u32;
+const INT_BIT_DEPTH: usize = size_of::<IntType>() * 8;
 
 pub fn part1(input: impl BufRead) -> anyhow::Result<String> {
-    let mut lines = input.lines().peekable();
-    let reading_size = match lines.peek() {
-        None => return Err(anyhow!("Empty input")),
-        Some(Err(e)) => return Err(anyhow!("IO error: {}", e)),
-        Some(Ok(l)) => l.len(),
-    };
-    let mut totals: Box<[u32]> = vec![0; reading_size].into_boxed_slice();
-    let mut num_lines = 0u32;
-    for line in lines {
-        let line = line?;
-        num_lines += 1;
+    let (ints, max_bit_depth) = parse_input(input)?;
+    let mut bitwise_average = 0;
+    for bit_idx in 0..INT_BIT_DEPTH {
+        bitwise_average |= bit_average(&ints, bit_idx);
+    }
+    let anti_average_mask = (1 << max_bit_depth) - 1;
+    let anti_average = bitwise_average ^ anti_average_mask;
+    Ok(format!("{}", bitwise_average * anti_average))
+}
 
-        if line.len() != reading_size {
-            return Err(anyhow!("Mismatched line lengths"));
-        }
-        for (idx, input_char) in line.as_bytes().iter().enumerate() {
-            match input_char {
-                b'1' => totals[idx] += 1,
-                b'0' => {}
-                _ => return Err(anyhow!("Input line was not binary")),
+pub fn part2(input: impl BufRead) -> anyhow::Result<String> {
+    let (ints, max_bit_depth) = parse_input(input)?;
+    let thing1 = bitwise_similarity_filter(&ints, max_bit_depth, false)?;
+    let thing2 = bitwise_similarity_filter(&ints, max_bit_depth, true)?;
+    Ok(format!("{}", thing1 * thing2))
+}
+
+fn parse_input(input: impl BufRead) -> anyhow::Result<(Vec<IntType>, usize)> {
+    let mut max_line_length = 0;
+    let ints = input
+        .lines()
+        .map(|line| {
+            let line = line?;
+            let len = line.len();
+            assert!(len <= INT_BIT_DEPTH);
+            if max_line_length < len {
+                max_line_length = len
             }
+            let mut out: IntType = 0;
+            for char_ in line.chars() {
+                out <<= 1;
+                match char_ {
+                    '1' => out |= 1,
+                    '0' => {}
+                    _ => return Err(anyhow!("Input line was not binary")),
+                };
+            }
+            Ok(out)
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok((ints, max_line_length))
+}
+
+fn bit_average(ints: &[IntType], bit_idx: usize) -> IntType {
+    let mut count = 0usize;
+    let mask: IntType = 1 << (INT_BIT_DEPTH - bit_idx - 1);
+    for int in ints {
+        if int & mask > 0 {
+            count += 1;
         }
     }
-    let mut gamma = 0u32;
-    let mut epsilon = 0u32;
-    for (idx, total) in totals.iter().enumerate() {
-        let shift: usize = reading_size - idx - 1;
-        if *total > num_lines / 2 {
-            gamma |= 1 << shift;
-        } else {
-            epsilon |= 1 << shift;
-        }
+    if 2 * count >= ints.len() {
+        mask
+    } else {
+        0
     }
-    let out = gamma * epsilon;
-    Ok(format!("{}", out))
+}
+
+fn bitwise_similarity_filter(ints: &[IntType], max_bit_depth: usize, anti: bool) -> anyhow::Result<IntType> {
+    let mut out: Vec<IntType> = ints.to_vec();
+    for bit_idx in (INT_BIT_DEPTH - max_bit_depth)..INT_BIT_DEPTH {
+        if out.len() == 1 {
+            break;
+        }
+        let bit_average = bit_average(&out, bit_idx);
+        let mask: IntType = 1 << (INT_BIT_DEPTH - bit_idx - 1);
+        out = out
+            .into_iter()
+            .filter(|int| anti ^ ((int & mask) ^ bit_average == 0))
+            .collect::<Vec<_>>();
+    }
+    Ok(*out.get(0).ok_or(anyhow!("Empty"))?)
 }
