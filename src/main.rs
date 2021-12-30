@@ -8,6 +8,7 @@ mod day1;
 mod day2;
 mod day3;
 mod day4;
+mod day5;
 
 fn main() -> anyhow::Result<()> {
     let mut args = args();
@@ -31,6 +32,7 @@ fn main() -> anyhow::Result<()> {
         (3, 2) => day3::part2,
         (4, 1) => day4::part1,
         (4, 2) => day4::part2,
+        (5, 1) => day5::part1,
         _ => return Err(anyhow!("Invalid day/part")),
     });
 
