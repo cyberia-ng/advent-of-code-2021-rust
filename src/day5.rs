@@ -5,24 +5,37 @@ use std::{
     cmp::{max, min},
     fmt::Display,
     io::BufRead,
+    iter,
     ops::{Index, IndexMut},
 };
 
 pub fn part1(input: impl BufRead) -> anyhow::Result<String> {
-    let lines = parse_input(input)?
-        .into_iter()
-        .filter(|line| line.is_horizontal() || line.is_vertical())
-        .collect::<Vec<_>>();
+    solution(input, false)
+}
+
+pub fn part2(input: impl BufRead) -> anyhow::Result<String> {
+    solution(input, true)
+}
+
+fn solution(input: impl BufRead, diagonals: bool) -> anyhow::Result<String> {
+    let lines = parse_input(input)?.into_iter().collect::<Vec<_>>();
     let mut farthest_point = Point { x: 0, y: 0 };
     for line in lines.iter() {
         farthest_point.x = max(max(line.start.x, line.end.x), farthest_point.x);
         farthest_point.y = max(max(line.start.y, line.end.y), farthest_point.y);
     }
-    eprintln!("{:?}", farthest_point);
     let mut matrix = Matrix::new(farthest_point.y + 1, farthest_point.x + 1, 0u8);
     for line in lines.iter() {
-        for point in line.points() {
-            matrix[point] += 1;
+        if diagonals {
+            for point in line.points_with_diagonals() {
+                matrix[point] += 1;
+            }
+        } else {
+            if line.is_horizontal() || line.is_vertical() {
+                for point in line.points() {
+                    matrix[point] += 1;
+                }
+            }
         }
     }
     let num_crossing_points = matrix.data.iter().filter(|count| **count >= 2).count();
@@ -60,10 +73,35 @@ impl Line {
             // Horizontal
             let start_x = min(self.start.x, self.end.x);
             let end_x = max(self.start.x, self.end.x);
-            Box::new(({ start_x..end_x + 1}).map(|x| Point { x, y: self.start.y }))
+            Box::new(({ start_x..end_x + 1 }).map(|x| Point { x, y: self.start.y }))
         } else {
             unimplemented!()
         }
+    }
+
+    fn points_with_diagonals(&self) -> impl Iterator<Item = Point> + '_ {
+        let horiz_distance = self.end.x as isize - self.start.x as isize;
+        let vert_distance = self.end.y as isize - self.start.y as isize;
+        assert!(
+            horiz_distance.abs() == 0
+                || vert_distance.abs() == 0
+                || horiz_distance.abs() == vert_distance.abs()
+        );
+        let x_direction = horiz_distance.signum();
+        let y_direction = vert_distance.signum();
+        let mut point = self.start;
+        iter::from_fn(move || {
+            if point.x != (self.end.x as isize + x_direction) as usize
+                || point.y != (self.end.y as isize + y_direction) as usize
+            {
+                let out = point;
+                point.x = (point.x as isize + x_direction) as usize;
+                point.y = (point.y as isize + y_direction) as usize;
+                Some(out)
+            } else {
+                None
+            }
+        })
     }
 }
 
