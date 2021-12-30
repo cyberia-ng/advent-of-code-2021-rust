@@ -1,6 +1,6 @@
 use anyhow::anyhow;
 use std::{
-    fmt::Display,
+    fmt::Debug,
     io::BufRead,
     mem::{transmute, MaybeUninit},
 };
@@ -17,14 +17,15 @@ const BOARD_HEIGHT: usize = 5;
 const BOARD_WIDTH: usize = 5;
 const BOARD_SIZE: usize = BOARD_WIDTH * BOARD_HEIGHT;
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 struct Board {
     numbers: [BingoNumber; BOARD_SIZE],
+    score: Option<u32>,
 }
 
-impl Display for Board {
+impl Debug for Board {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for row in self.rows() {
+        for row in Self::rows(&self.numbers) {
             for bn in row.iter() {
                 if bn.marked {
                     write!(f, "{:>2}* ", bn.number)?;
@@ -45,31 +46,37 @@ impl Board {
                 marked: false,
                 number: n,
             }),
+            score: None,
         }
     }
 
-    fn draw_number(mut self, number: Int) -> Result<u32, Self> {
+    /// Returns a boolean indicating if the state changed
+    fn draw_number(&mut self, number: Int) -> bool {
+        if self.score.is_some() {
+            return false;
+        }
+
         for bingo_number in self.numbers.iter_mut() {
             if bingo_number.number == number {
                 bingo_number.marked = true;
             }
         }
 
-        for row in self.rows() {
+        for row in Self::rows(&self.numbers) {
             if row.iter().all(|bn| bn.marked) {
-                let score = number as u32 * self.sum_unmarked();
-                return Ok(score);
+                self.score = Some(number as u32 * self.sum_unmarked());
+                return true;
             }
         }
 
-        for col in self.cols() {
+        for col in Self::cols(&self.numbers) {
             if col.iter().all(|bn| bn.marked) {
-                let score = number as u32 * self.sum_unmarked();
-                return Ok(score);
+                self.score = Some(number as u32 * self.sum_unmarked());
+                return true;
             }
         }
 
-        Err(self)
+        return false;
     }
 
     fn sum_unmarked(&self) -> u32 {
@@ -79,59 +86,35 @@ impl Board {
             .fold(0u32, |total, item| total + item.number as u32)
     }
 
-    fn rows(&self) -> impl Iterator<Item = [BingoNumber; BOARD_WIDTH]> + '_ {
+    fn rows(numbers: &[BingoNumber]) -> impl Iterator<Item = [BingoNumber; BOARD_WIDTH]> + '_ {
         ({ 0..BOARD_HEIGHT }).map(|row_idx| {
             let start = row_idx * BOARD_WIDTH;
             let end = (row_idx + 1) * BOARD_WIDTH;
-            self.numbers[start..end].try_into().unwrap()
+            numbers[start..end].try_into().unwrap()
         })
     }
 
-    fn cols(&self) -> impl Iterator<Item = [BingoNumber; BOARD_HEIGHT]> + '_ {
+    fn cols(numbers: &[BingoNumber]) -> impl Iterator<Item = [BingoNumber; BOARD_HEIGHT]> + '_ {
         ({ 0..BOARD_WIDTH }).map(|col_idx| {
             let mut out: [MaybeUninit<BingoNumber>; BOARD_HEIGHT] =
                 unsafe { MaybeUninit::uninit().assume_init() };
             for (row_idx, item) in out.iter_mut().enumerate() {
-                let _ = *item.write(self.numbers[row_idx * BOARD_WIDTH + col_idx]);
+                let _ = *item.write(numbers[row_idx * BOARD_WIDTH + col_idx]);
             }
             unsafe { transmute(out) }
         })
     }
 }
 
-struct Boards {
-    incomplete: Vec<Board>,
-    complete: Vec<u32>,
-}
-
-impl Boards {
-    fn new(boards: Vec<Board>) -> Self {
-        let len = boards.len();
-        Boards {
-            incomplete: boards,
-            complete: Vec::with_capacity(len),
-        }
-    }
-
-    fn draw_number(&mut self, number: Int) {
-        let mut new_incomplete = Vec::with_capacity(self.incomplete.len());
-        while let Some(board) = self.incomplete.pop() {
-            match board.draw_number(number) {
-                Ok(score) => self.complete.push(score),
-                Err(board) => new_incomplete.push(board),
-            }
-        }
-        self.incomplete = new_incomplete;
-    }
-}
-
 pub fn part1(input: impl BufRead) -> anyhow::Result<String> {
     let input = parse_input(input)?;
-    let mut boards = Boards::new(input.boards);
-    for drawn_number in input.random_draw.iter() {
-        boards.draw_number(*drawn_number);
-        if let Some(score) = boards.complete.get(0) {
-            return Ok(format!("{}", score));
+    let mut state = input.boards;
+    for drawn_number in input.random_draw.into_iter() {
+        for board in state.iter_mut() {
+            board.draw_number(drawn_number);
+            if let Some(score) = board.score {
+                return Ok(format!("{}", score));
+            }
         }
     }
     Err(anyhow!("No winners :("))
@@ -139,12 +122,17 @@ pub fn part1(input: impl BufRead) -> anyhow::Result<String> {
 
 pub fn part2(input: impl BufRead) -> anyhow::Result<String> {
     let input = parse_input(input)?;
-    let mut boards = Boards::new(input.boards);
-    for drawn_number in input.random_draw.iter() {
-        boards.draw_number(*drawn_number);
+    let mut state = input.boards.into_boxed_slice();
+    let mut last_complete_idx: Option<usize> = None;
+    for drawn_number in input.random_draw.into_iter() {
+        for (board_idx, board) in state.iter_mut().enumerate() {
+            if board.draw_number(drawn_number) {
+                last_complete_idx = Some(board_idx);
+            }
+        }
     }
-    if let Some(score) = boards.complete.last() {
-        Ok(format!("{}", score))
+    if let Some(idx) = last_complete_idx {
+        Ok(format!("{}", state[idx].score.unwrap()))
     } else {
         Err(anyhow!("No winners :("))
     }
@@ -168,7 +156,7 @@ fn parse_input(input: impl BufRead) -> anyhow::Result<Input> {
         .map(|n| n.parse::<Int>())
         .collect::<Result<Vec<_>, _>>()?;
     let boards = paras
-        .map(|para| -> anyhow::Result<Board> {
+        .map(|para| -> anyhow::Result<_> {
             let numbers: [Int; BOARD_SIZE] = para
                 .split(' ')
                 .filter(|word| !word.is_empty())
@@ -193,7 +181,7 @@ mod test {
     fn board_cols() {
         let numbers = ({ 0..(BOARD_SIZE as Int) }).collect::<Vec<_>>();
         let board = Board::new(numbers.try_into().unwrap());
-        let cols = board.cols().collect::<Vec<_>>();
+        let cols = Board::cols(&board.numbers).collect::<Vec<_>>();
         assert_eq!(cols[0].map(|bn| bn.number), [0, 5, 10, 15, 20]);
         assert_eq!(cols[4].map(|bn| bn.number), [4, 9, 14, 19, 24]);
     }
