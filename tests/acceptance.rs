@@ -21,3 +21,5 @@ macro_rules! test_day {
 test_day!(day4_1, 4, 1, day4::part1);
 test_day!(day6_1, 6, 1, day6::part1);
 test_day!(day6_2, 6, 2, day6::part2);
+test_day!(day7_1, 7, 1, day7::part1);
+test_day!(day7_2, 7, 2, day7::part2);
