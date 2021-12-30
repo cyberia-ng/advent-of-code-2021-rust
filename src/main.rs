@@ -4,12 +4,7 @@ use std::{
     io::{stdin, StdinLock},
 };
 
-mod day1;
-mod day2;
-mod day3;
-mod day4;
-mod day5;
-mod day6;
+use advent_of_code_2021_rust::*;
 
 fn main() -> anyhow::Result<()> {
     let mut args = args();
