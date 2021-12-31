@@ -30,11 +30,9 @@ fn solution(input: impl BufRead, diagonals: bool) -> anyhow::Result<String> {
             for point in line.points_with_diagonals() {
                 matrix[point] += 1;
             }
-        } else {
-            if line.is_horizontal() || line.is_vertical() {
-                for point in line.points() {
-                    matrix[point] += 1;
-                }
+        } else if line.is_horizontal() || line.is_vertical() {
+            for point in line.points() {
+                matrix[point] += 1;
             }
         }
     }

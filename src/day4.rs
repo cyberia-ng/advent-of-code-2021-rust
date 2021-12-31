@@ -108,7 +108,7 @@ impl Board {
             }
         }
 
-        return false;
+        false
     }
 
     fn sum_unmarked(&self) -> u32 {

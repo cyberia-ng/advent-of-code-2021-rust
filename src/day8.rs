@@ -23,7 +23,7 @@ pub fn part2(input: impl BufRead) -> anyhow::Result<String> {
         eprintln!("{:?}", input_row);
         let mut possibilities = Possibilities::new();
         for observed_word in input_row.observations.iter() {
-            possibilities.update(&observed_word);
+            possibilities.update(observed_word);
             eprintln!("{:?}", possibilities);
         }
         possibilities.reduce();
@@ -31,7 +31,7 @@ pub fn part2(input: impl BufRead) -> anyhow::Result<String> {
         let number = input_row
             .output
             .iter()
-            .map(|word| possibilities.decode(&word))
+            .map(|word| possibilities.decode(word))
             .fold(Ok(0u32), |number, digit| -> anyhow::Result<_> {
                 Ok(number? * 10 + (digit? as u32))
             })?;
@@ -88,7 +88,7 @@ impl Possibilities {
 
     fn decode(&self, received: &[u8]) -> anyhow::Result<u8> {
         let mut real_wires = received
-            .into_iter()
+            .iter()
             .map(|received| {
                 let targets = self.0[*received as usize];
                 if !is_single_bit(targets) {
@@ -99,17 +99,17 @@ impl Possibilities {
             })
             .collect::<anyhow::Result<Vec<_>, _>>()?;
         real_wires.sort_unstable();
-        let digit = match &real_wires[..] {
-            &[0, 1, 2, 4, 5, 6] => 0,
-            &[2, 5] => 1,
-            &[0, 2, 3, 4, 6] => 2,
-            &[0, 2, 3, 5, 6] => 3,
-            &[1, 2, 3, 5] => 4,
-            &[0, 1, 3, 5, 6] => 5,
-            &[0, 1, 3, 4, 5, 6] => 6,
-            &[0, 2, 5] => 7,
-            &[0, 1, 2, 3, 4, 5, 6] => 8,
-            &[0, 1, 2, 3, 5, 6] => 9,
+        let digit = match real_wires[..] {
+            [0, 1, 2, 4, 5, 6] => 0,
+            [2, 5] => 1,
+            [0, 2, 3, 4, 6] => 2,
+            [0, 2, 3, 5, 6] => 3,
+            [1, 2, 3, 5] => 4,
+            [0, 1, 3, 5, 6] => 5,
+            [0, 1, 3, 4, 5, 6] => 6,
+            [0, 2, 5] => 7,
+            [0, 1, 2, 3, 4, 5, 6] => 8,
+            [0, 1, 2, 3, 5, 6] => 9,
             _ => return Err(anyhow!("Unknown digit {:?}", real_wires)),
         };
         Ok(digit)
@@ -121,7 +121,7 @@ fn bits<'a>(vals: impl IntoIterator<Item = &'a u8>) -> u8 {
 }
 
 fn is_single_bit(item: u8) -> bool {
-    return item != 0 && item & (item - 1) == 0;
+    item != 0 && item & (item - 1) == 0
 }
 
 fn get_attestations(received: &[u8]) -> (u8, u8) {
