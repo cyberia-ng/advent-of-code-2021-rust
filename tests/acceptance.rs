@@ -25,3 +25,4 @@ test_day!(day7_1, 7, 1, day7::part1);
 test_day!(day7_2, 7, 2, day7::part2);
 test_day!(day8_1, 8, 1, day8::part1);
 test_day!(day8_2, 8, 2, day8::part2);
+test_day!(day9_1, 9, 1, day9::part1);

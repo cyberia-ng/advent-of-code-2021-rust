@@ -13,6 +13,7 @@ fn main() -> anyhow::Result<()> {
         .next()
         .ok_or(anyhow!("Must provide day number argument"))?;
     let day = day.parse::<u8>()?;
+
     let part = args
         .next()
         .ok_or(anyhow!("Must provide part number argument"))?;
@@ -36,6 +37,7 @@ fn main() -> anyhow::Result<()> {
         (7, 2) => day7::part2,
         (8, 1) => day8::part1,
         (8, 2) => day8::part2,
+        (9, 1) => day9::part1,
         _ => return Err(anyhow!("Invalid day/part")),
     });
 
