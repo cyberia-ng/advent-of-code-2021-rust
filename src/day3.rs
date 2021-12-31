@@ -1,9 +1,6 @@
 use anyhow::anyhow;
 use std::{io::BufRead, mem::size_of};
 
-type IntType = u32;
-const INT_BIT_DEPTH: usize = size_of::<IntType>() * 8;
-
 pub fn part1(input: impl BufRead) -> anyhow::Result<String> {
     let (ints, max_bit_depth) = parse_input(input)?;
     let mut bitwise_average = 0;
@@ -21,6 +18,9 @@ pub fn part2(input: impl BufRead) -> anyhow::Result<String> {
     let thing2 = bitwise_similarity_filter(&ints, max_bit_depth, true)?;
     Ok(format!("{}", thing1 * thing2))
 }
+
+type IntType = u32;
+const INT_BIT_DEPTH: usize = size_of::<IntType>() * 8;
 
 fn parse_input(input: impl BufRead) -> anyhow::Result<(Vec<IntType>, usize)> {
     let mut max_line_length = 0;

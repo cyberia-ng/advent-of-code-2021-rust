@@ -5,6 +5,38 @@ use std::{
     mem::{transmute, MaybeUninit},
 };
 
+pub fn part1(input: impl BufRead) -> anyhow::Result<String> {
+    let input = parse_input(input)?;
+    let mut state = input.boards;
+    for drawn_number in input.random_draw.into_iter() {
+        for board in state.iter_mut() {
+            board.draw_number(drawn_number);
+            if let Some(score) = board.score {
+                return Ok(format!("{}", score));
+            }
+        }
+    }
+    Err(anyhow!("No winners :("))
+}
+
+pub fn part2(input: impl BufRead) -> anyhow::Result<String> {
+    let input = parse_input(input)?;
+    let mut state = input.boards.into_boxed_slice();
+    let mut last_complete_idx: Option<usize> = None;
+    for drawn_number in input.random_draw.into_iter() {
+        for (board_idx, board) in state.iter_mut().enumerate() {
+            if board.draw_number(drawn_number) {
+                last_complete_idx = Some(board_idx);
+            }
+        }
+    }
+    if let Some(idx) = last_complete_idx {
+        Ok(format!("{}", state[idx].score.unwrap()))
+    } else {
+        Err(anyhow!("No winners :("))
+    }
+}
+
 type Int = u8;
 
 #[derive(Debug, Clone, Copy)]
@@ -103,38 +135,6 @@ impl Board {
             }
             unsafe { transmute(out) }
         })
-    }
-}
-
-pub fn part1(input: impl BufRead) -> anyhow::Result<String> {
-    let input = parse_input(input)?;
-    let mut state = input.boards;
-    for drawn_number in input.random_draw.into_iter() {
-        for board in state.iter_mut() {
-            board.draw_number(drawn_number);
-            if let Some(score) = board.score {
-                return Ok(format!("{}", score));
-            }
-        }
-    }
-    Err(anyhow!("No winners :("))
-}
-
-pub fn part2(input: impl BufRead) -> anyhow::Result<String> {
-    let input = parse_input(input)?;
-    let mut state = input.boards.into_boxed_slice();
-    let mut last_complete_idx: Option<usize> = None;
-    for drawn_number in input.random_draw.into_iter() {
-        for (board_idx, board) in state.iter_mut().enumerate() {
-            if board.draw_number(drawn_number) {
-                last_complete_idx = Some(board_idx);
-            }
-        }
-    }
-    if let Some(idx) = last_complete_idx {
-        Ok(format!("{}", state[idx].score.unwrap()))
-    } else {
-        Err(anyhow!("No winners :("))
     }
 }
 

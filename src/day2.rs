@@ -1,36 +1,6 @@
 use anyhow::anyhow;
 use std::{io::BufRead, str::FromStr};
 
-enum Direction {
-    Forward,
-    Down,
-    Up,
-}
-use Direction::*;
-
-struct Command {
-    direction: Direction,
-    amount: u32,
-}
-
-impl FromStr for Command {
-    type Err = anyhow::Error;
-
-    fn from_str(line: &str) -> Result<Self, Self::Err> {
-        let (direction, amount) = line
-            .split_once(' ')
-            .ok_or_else(|| anyhow!("Invalid command: {}", line))?;
-        let direction = match direction {
-            "forward" => Forward,
-            "down" => Down,
-            "up" => Up,
-            _ => return Err(anyhow!("Bad direction: {}", direction)),
-        };
-        let amount = amount.parse()?;
-        Ok(Command { direction, amount })
-    }
-}
-
 pub fn part1(input: impl BufRead) -> anyhow::Result<String> {
     let commands: Box<[Command]> = input
         .lines()
@@ -67,4 +37,34 @@ pub fn part2(input: impl BufRead) -> anyhow::Result<String> {
         }
     }
     Ok(format!("{}", horizontal * depth))
+}
+
+enum Direction {
+    Forward,
+    Down,
+    Up,
+}
+use Direction::*;
+
+struct Command {
+    direction: Direction,
+    amount: u32,
+}
+
+impl FromStr for Command {
+    type Err = anyhow::Error;
+
+    fn from_str(line: &str) -> Result<Self, Self::Err> {
+        let (direction, amount) = line
+            .split_once(' ')
+            .ok_or_else(|| anyhow!("Invalid command: {}", line))?;
+        let direction = match direction {
+            "forward" => Forward,
+            "down" => Down,
+            "up" => Up,
+            _ => return Err(anyhow!("Bad direction: {}", direction)),
+        };
+        let amount = amount.parse()?;
+        Ok(Command { direction, amount })
+    }
 }
