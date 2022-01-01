@@ -18,12 +18,14 @@ macro_rules! test_day {
     };
 }
 
-test_day!(day4_1, 4, 1, day4::part1);
-test_day!(day6_1, 6, 1, day6::part1);
-test_day!(day6_2, 6, 2, day6::part2);
-test_day!(day7_1, 7, 1, day7::part1);
-test_day!(day7_2, 7, 2, day7::part2);
-test_day!(day8_1, 8, 1, day8::part1);
-test_day!(day8_2, 8, 2, day8::part2);
-test_day!(day9_1, 9, 1, day9::part1);
-test_day!(day9_2, 9, 2, day9::part2);
+test_day!(day04_1, 4, 1, day04::part1);
+test_day!(day06_1, 6, 1, day06::part1);
+test_day!(day06_2, 6, 2, day06::part2);
+test_day!(day07_1, 7, 1, day07::part1);
+test_day!(day07_2, 7, 2, day07::part2);
+test_day!(day08_1, 8, 1, day08::part1);
+test_day!(day08_2, 8, 2, day08::part2);
+test_day!(day09_1, 9, 1, day09::part1);
+test_day!(day09_2, 9, 2, day09::part2);
+test_day!(day10_1, 10, 1, day10::part1);
+test_day!(day10_2, 10, 2, day10::part2);
