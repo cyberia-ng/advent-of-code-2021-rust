@@ -11,6 +11,16 @@ pub fn part1(input: impl BufRead) -> anyhow::Result<String> {
     Ok(format!("{}", total_flashed))
 }
 
+pub fn part2(input: impl BufRead) -> anyhow::Result<String> {
+    let mut matrix = parse_input(input)?;
+    let mut steps = 0u64;
+    while !matrix.values().all(|v| *v == 0) {
+        iterate_flash_step(&mut matrix);
+        steps += 1;
+    }
+    Ok(format!("{}", steps))
+}
+
 fn parse_input(mut input: impl BufRead) -> anyhow::Result<Matrix<u8>> {
     let mut input_string = String::new();
     input.read_to_string(&mut input_string)?;
