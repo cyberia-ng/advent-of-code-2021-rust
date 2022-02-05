@@ -41,6 +41,7 @@ fn main() -> anyhow::Result<()> {
         (9, 2) => day09::part2,
         (10, 1) => day10::part1,
         (10, 2) => day10::part2,
+        (11, 1) => day11::part1,
         _ => return Err(anyhow!("Invalid day/part")),
     });
 

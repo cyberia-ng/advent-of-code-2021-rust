@@ -29,44 +29,23 @@ pub fn part2(input: impl BufRead) -> anyhow::Result<String> {
 
 type Input = Matrix<u8>;
 
-fn parse_input(input: impl BufRead) -> anyhow::Result<Input> {
-    let lines = input
-        .lines()
-        .map(|line| line.map_err(anyhow::Error::from))
-        .collect::<anyhow::Result<Vec<_>>>()?;
-    let rows = lines.len();
-    let cols = lines[0].len();
-    let mut input = Matrix::new(rows, cols, 0u8);
-    for (row_idx, line) in lines.iter().enumerate() {
-        for (col_idx, char_) in line.chars().enumerate() {
-            input[(col_idx, row_idx)] = String::from(char_).parse()?;
-        }
-    }
-    Ok(input)
-}
-
-fn surrounding_points(point: &Point, boundary: &Point) -> impl Iterator<Item = Point> {
-    const SURROUNDING_RELATIVE: [(isize, isize); 4] = [(-1, 0), (1, 0), (0, -1), (0, 1)];
-    let point = *point;
-    let boundary = *boundary;
-    SURROUNDING_RELATIVE
-        .iter()
-        .map(move |rel| (point.0 as isize + rel.0, point.1 as isize + rel.1))
-        .filter(move |out| {
-            out.0 >= 0 && out.0 < boundary.0 as isize && out.1 >= 0 && out.1 < boundary.1 as isize
-        })
-        .map(|out| (out.0 as usize, out.1 as usize))
+fn parse_input(mut input: impl BufRead) -> anyhow::Result<Input> {
+    let mut input_string = String::new();
+    input.read_to_string(&mut input_string)?;
+    Ok(Matrix::parse_from_table(&input_string)?)
 }
 
 fn find_low_points(matrix: &Matrix<u8>) -> Vec<Point> {
     let mut low_points = Vec::new();
-    for ((x, y), value) in matrix.enumerate() {
+    for (point, value) in matrix.enumerate() {
         let mut value_is_lowest = true;
-        for point in surrounding_points(&(x, y), &(matrix.cols(), matrix.rows())) {
-            value_is_lowest &= matrix[point] > value;
+        for surrounding_point in point.surrounding_points(false) {
+            if let Some(value_of_surrounding) = matrix.get(surrounding_point) {
+                value_is_lowest &= *value_of_surrounding > value;
+            }
         }
         if value_is_lowest {
-            low_points.push((x, y));
+            low_points.push(point);
         }
     }
     low_points
@@ -78,15 +57,16 @@ fn find_basin(start: &Point, matrix: &Matrix<u8>) -> Vec<Point> {
     let mut to_visit = vec![*start];
     let mut visited = Vec::new();
     let mut basin = Vec::new();
-    let boundary = (matrix.cols(), matrix.rows());
     while let Some(point) = to_visit.pop() {
         if visited.contains(&point) {
             continue;
         }
         visited.push(point);
-        if matrix[point] < BASIN_LIMIT {
-            basin.push(point);
-            to_visit.extend(surrounding_points(&point, &boundary));
+        if let Some(value) = matrix.get(point) {
+            if *value < BASIN_LIMIT {
+                basin.push(point);
+                to_visit.extend(point.surrounding_points(false));
+            }
         }
     }
     basin
